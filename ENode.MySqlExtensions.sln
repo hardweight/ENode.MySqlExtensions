@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ENode.MySqlExtensions", "ENode.MySqlExtensions\ENode.MySqlExtensions.csproj", "{5591C100-5DA7-4D74-8B9A-B43C59015A64}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ENode.MySqlExtensionsUnitTest", "ENode.MySqlExtensionsUnitTest\ENode.MySqlExtensionsUnitTest.csproj", "{909ECF19-2826-4B7A-BA43-1BB5191AEF6A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{5591C100-5DA7-4D74-8B9A-B43C59015A64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5591C100-5DA7-4D74-8B9A-B43C59015A64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5591C100-5DA7-4D74-8B9A-B43C59015A64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{909ECF19-2826-4B7A-BA43-1BB5191AEF6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{909ECF19-2826-4B7A-BA43-1BB5191AEF6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{909ECF19-2826-4B7A-BA43-1BB5191AEF6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{909ECF19-2826-4B7A-BA43-1BB5191AEF6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -95,7 +95,8 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        var sql = string.Format("SELECT * FROM [{0}] WHERE AggregateRootId = @AggregateRootId AND Version >= @MinVersion AND Version <= @MaxVersion", GetTableName(aggregateRootId));
+                        var sql = string.Format(
+                            "SELECT * FROM `{0}` WHERE AggregateRootId = @AggregateRootId AND Version >= @MinVersion AND Version <= @MaxVersion",GetTableName(aggregateRootId));
                         return connection.Query<StreamRecord>(sql, new
                         {
                             AggregateRootId = aggregateRootId,
@@ -128,7 +129,7 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        var sql = string.Format("SELECT * FROM [{0}] WHERE AggregateRootId = @AggregateRootId AND Version >= @MinVersion AND Version <= @MaxVersion", GetTableName(aggregateRootId));
+                        var sql = string.Format("SELECT * FROM `{0}` WHERE AggregateRootId = @AggregateRootId AND Version >= @MinVersion AND Version <= @MaxVersion", GetTableName(aggregateRootId));
                         var result = await connection.QueryAsync<StreamRecord>(sql, new
                         {
                             AggregateRootId = aggregateRootId,
@@ -224,7 +225,10 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        await connection.InsertAsync(record, GetTableName(record.AggregateRootId));
+                        string sql = string.Format(
+                            "INSERT INTO {0} (AggregateRootId,AggregateRootTypeName,Version,CommandId,CreatedOn,Events) VALUES(@AggregateRootId,@AggregateRootTypeName,@Version,@CommandId,@CreatedOn,@Events)",
+                            GetTableName(record.AggregateRootId));
+                        await connection.ExecuteAsync(sql, record);
                         return new AsyncTaskResult<EventAppendResult>(AsyncTaskStatus.Success, EventAppendResult.Success);
                     }
                 }
@@ -256,7 +260,14 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        var result = await connection.QueryListAsync<StreamRecord>(new { AggregateRootId = aggregateRootId, Version = version }, GetTableName(aggregateRootId));
+                        var sql = string.Format(
+                            "SELECT * FROM {0} WHERE AggregateRootId=@AggregateRootId and Version=@Version",
+                            GetTableName(aggregateRootId));
+                        var result = await connection.QueryAsync<StreamRecord>(sql, new
+                        {
+                            AggregateRootId = aggregateRootId,
+                            Version = version
+                        });
                         var record = result.SingleOrDefault();
                         var stream = record != null ? ConvertFrom(record) : null;
                         return new AsyncTaskResult<DomainEventStream>(AsyncTaskStatus.Success, stream);
@@ -282,7 +293,12 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        var result = await connection.QueryListAsync<StreamRecord>(new { AggregateRootId = aggregateRootId, CommandId = commandId }, GetTableName(aggregateRootId));
+                        string sql = string.Format("SELECT * FROM {0} WHERE AggregateRootId=@AggregateRootId and CommandId=@CommandId", GetTableName(aggregateRootId));
+                        var result = await connection.QueryAsync<StreamRecord>(sql, new
+                        {
+                            AggregateRootId = aggregateRootId,
+                            CommandId = commandId
+                        });
                         var record = result.SingleOrDefault();
                         var stream = record != null ? ConvertFrom(record) : null;
                         return new AsyncTaskResult<DomainEventStream>(AsyncTaskStatus.Success, stream);

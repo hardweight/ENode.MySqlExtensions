@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using ECommon.Components;
-using ECommon.Dapper;
 using ECommon.IO;
 using ECommon.Logging;
 using ECommon.Utilities;
@@ -58,14 +58,18 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        await connection.InsertAsync(new
+                        string sql = string.Format(
+                            "INSERT INTO {0} (ProcessorName,AggregateRootTypeName,AggregateRootId,Version,CreatedOn) VALUES (@ProcessorName,@AggregateRootTypeName,@AggregateRootId,@Version,@CreatedOn)",
+                            _tableName);
+
+                        await connection.ExecuteAsync(sql, new
                         {
                             ProcessorName = processorName,
                             AggregateRootTypeName = aggregateRootTypeName,
                             AggregateRootId = aggregateRootId,
                             Version = 1,
                             CreatedOn = DateTime.Now
-                        }, _tableName);
+                        });
                         return AsyncTaskResult.Success;
                     }
                 }
@@ -90,18 +94,16 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        await connection.UpdateAsync(
-                        new
+                        string sql = string.Format(
+                            "UPDATE {0} SET Version=@Version,CreatedOn=@CreatedOn WHERE ProcessorName=@ProcessorName AND AggregateRootId=@AggregateRootId AND Version=@NVersion",
+                            _tableName);
+                        await connection.ExecuteAsync(sql, new
                         {
                             Version = publishedVersion,
-                            CreatedOn = DateTime.Now
-                        },
-                        new
-                        {
                             ProcessorName = processorName,
                             AggregateRootId = aggregateRootId,
-                            Version = publishedVersion - 1
-                        }, _tableName);
+                            NVersion = publishedVersion - 1
+                        });
                         return AsyncTaskResult.Success;
                     }
                 }
@@ -123,11 +125,12 @@ namespace ENode.MySqlExtensions
             {
                 using (var connection = GetConnection())
                 {
-                    var result = await connection.QueryListAsync<int>(new
+                    string sql = string.Format("SELECT Version FROM {0} WHERE ProcessorName=@ProcessorName AND AggregateRootId=@AggregateRootId", _tableName);
+                    var result = await connection.QueryAsync<int>(sql, new
                     {
                         ProcessorName = processorName,
                         AggregateRootId = aggregateRootId
-                    }, _tableName, "Version");
+                    });
                     return new AsyncTaskResult<int>(AsyncTaskStatus.Success, result.SingleOrDefault());
                 }
             }

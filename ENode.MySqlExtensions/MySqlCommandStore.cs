@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using ECommon.Components;
-using ECommon.Dapper;
 using ECommon.IO;
 using ECommon.Logging;
 using ECommon.Serializing;
@@ -72,8 +72,12 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        await connection.InsertAsync(record, _tableName);
-                        return new AsyncTaskResult<CommandAddResult>(AsyncTaskStatus.Success, null, CommandAddResult.Success);
+                        string sql = string.Format(
+                            "INSERT INTO `{0}` (CommandId,CreatedOn,AggregateRootId,MessagePayload,MessageTypeName) VALUES (@CommandId,@CreatedOn,@AggregateRootId,@MessagePayload,@MessageTypeName)",
+                            _tableName);
+                        await connection.ExecuteAsync(sql, record);
+                        return new AsyncTaskResult<CommandAddResult>(AsyncTaskStatus.Success, null,
+                            CommandAddResult.Success);
                     }
                 }
                 catch (MySqlException ex)
@@ -82,6 +86,7 @@ namespace ENode.MySqlExtensions
                     {
                         return new AsyncTaskResult<CommandAddResult>(AsyncTaskStatus.Success, null, CommandAddResult.DuplicateCommand);
                     }
+                    _logger.Error(ex.InnerException);
                     _logger.Error(string.Format("Add handled command has sql exception, handledCommand: {0}", handledCommand), ex);
                     throw;
                 }
@@ -100,7 +105,8 @@ namespace ENode.MySqlExtensions
                 {
                     using (var connection = GetConnection())
                     {
-                        var result = await connection.QueryListAsync<CommandRecord>(new { CommandId = commandId }, _tableName);
+                        string sql = string.Format("SELECT * FROM {0} WHERE CommandId=@CommandId", _tableName);
+                        var result = await connection.QueryAsync<CommandRecord>(sql, new {CommandId = commandId});
                         var record = result.SingleOrDefault();
                         var handledCommand = record != null ? ConvertFrom(record) : null;
                         return new AsyncTaskResult<HandledCommand>(AsyncTaskStatus.Success, handledCommand);
@@ -153,7 +159,7 @@ namespace ENode.MySqlExtensions
 
         #endregion
 
-        class CommandRecord
+        public class CommandRecord
         {
             public string CommandId { get; set; }
             public string AggregateRootId { get; set; }
