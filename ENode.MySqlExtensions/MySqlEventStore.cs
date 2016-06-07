@@ -160,19 +160,12 @@ namespace ENode.MySqlExtensions
             {
                 throw new ArgumentException("Event streams cannot be empty.");
             }
-            var table = BuildEventTable();
             var aggregateRootIds = eventStreams.Select(x => x.AggregateRootId).Distinct();
             if (aggregateRootIds.Count() > 1)
             {
                 throw new ArgumentException("Batch append event only support for one aggregate.");
             }
             var aggregateRootId = aggregateRootIds.Single();
-
-            //foreach (var eventStream in eventStreams)
-            //{
-            //    AddDataRow(table, eventStream);
-            //}
-
             return _ioHelper.TryIOFuncAsync(async () =>
             {
                 try
@@ -182,8 +175,11 @@ namespace ENode.MySqlExtensions
                         await connection.OpenAsync();
                         try
                         {
-                            var sql = BuildSql(eventStreams, aggregateRootId);
-                            await connection.ExecuteAsync(sql, commandTimeout: _bulkCopyTimeout);
+                            string sql = string.Format(
+                                "INSERT INTO {0} (AggregateRootId,AggregateRootTypeName,CommandId,Version,CreatedOn,Events) VALUES (@AggregateRootId,@AggregateRootTypeName,@CommandId,@Version,@CreatedOn,@Events) ",
+                                GetTableName(aggregateRootId));
+                            var streamRecords = eventStreams.Select(ConvertTo);
+                            await connection.ExecuteAsync(sql, streamRecords, commandTimeout: _bulkCopyTimeout);
                             return new AsyncTaskResult<EventAppendResult>(AsyncTaskStatus.Success,
                                 EventAppendResult.Success);
                         }
@@ -359,6 +355,7 @@ namespace ENode.MySqlExtensions
                 record.CreatedOn,
                 _eventSerializer.Deserialize<IDomainEvent>(_jsonSerializer.Deserialize<IDictionary<string, string>>(record.Events)));
         }
+
         private StreamRecord ConvertTo(DomainEventStream eventStream)
         {
             return new StreamRecord
@@ -370,32 +367,6 @@ namespace ENode.MySqlExtensions
                 CreatedOn = eventStream.Timestamp,
                 Events = _jsonSerializer.Serialize(_eventSerializer.Serialize(eventStream.Events))
             };
-        }
-        private DataTable BuildEventTable()
-        {
-            var table = new DataTable();
-            table.Columns.Add("AggregateRootId", typeof(string));
-            table.Columns.Add("AggregateRootTypeName", typeof(string));
-            table.Columns.Add("Version", typeof(int));
-            table.Columns.Add("CommandId", typeof(string));
-            table.Columns.Add("CreatedOn", typeof(DateTime));
-            table.Columns.Add("Events", typeof(string));
-            return table;
-        }
-
-        private string BuildSql(IEnumerable<DomainEventStream> eventStreams, string aggregateRootId)
-        {
-            var sb = new StringBuilder();
-            sb.AppendFormat(
-                "INSERT INTO {0} (AggregateRootId,AggregateRootTypeName,CommandId,Version,CreatedOn,Events) VALUES ",
-                GetTableName(aggregateRootId));
-            foreach (var eventStream in eventStreams)
-            {
-                sb.AppendFormat("({0},{1},{2},{3},{4},{5}),", eventStream.AggregateRootId,
-                    eventStream.AggregateRootTypeName, eventStream.CommandId, eventStream.Version, eventStream.Timestamp,
-                    _jsonSerializer.Serialize(_eventSerializer.Serialize(eventStream.Events)));
-            }
-            return sb.ToString().Remove(sb.ToString().LastIndexOf(",", StringComparison.Ordinal), 1);
         }
 
         #endregion
