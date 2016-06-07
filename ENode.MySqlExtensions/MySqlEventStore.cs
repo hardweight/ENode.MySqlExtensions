@@ -136,7 +136,7 @@ namespace ENode.MySqlExtensions
                             MinVersion = minVersion,
                             MaxVersion = maxVersion
                         });
-                        var streams = result.Select(record => ConvertFrom(record));
+                        var streams = result.Select(ConvertFrom);
                         return new AsyncTaskResult<IEnumerable<DomainEventStream>>(AsyncTaskStatus.Success, streams);
                     }
                 }

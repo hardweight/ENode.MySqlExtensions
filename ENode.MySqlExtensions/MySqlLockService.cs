@@ -46,13 +46,11 @@ namespace ENode.MySqlExtensions
         {
             using (var connection = GetConnection())
             {
-                //new { Name = lockKey }
                 var count = connection.Query(string.Format("SELECT * FROM `{0}` WHERE Name=@Name", _tableName),
                     new {Name = lockKey}).Count();
                 if (count == 0)
                 {
                     connection.Execute(string.Format("INSERT INTO {0} VALUES (@Name)", _tableName), new {Name = lockKey});
-                    // connection.Insert(new { Name = lockKey }, _tableName);
                 }
             }
         }
